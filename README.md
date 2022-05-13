@@ -1,1 +1,1 @@
-Check out the minimal portfolio at https://jasminechann.github.io/
+Check out the minimal portfolio at 
