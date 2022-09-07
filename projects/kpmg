@@ -1,0 +1,354 @@
+#!/usr/bin/env python
+# coding: utf-8
+
+# In[2]:
+#data wrangling
+import pandas as pd
+#datetime
+import datetime as dt
+
+# In[4]:
+# load sheet Transactions trong file KPMG và in ra 5 dòng đầu tiên
+df = pd.read_excel("KPMG.xlsx", "Transactions")
+df.head()
+
+
+# In[5]:
+
+# in ra info bảng
+print(df.info())
+
+
+# In[6]:
+
+
+# describe default
+print(df.describe())
+
+
+# In[7]:
+
+
+# describe các biến object
+df.describe(include=[object]) 
+
+
+# In[8]:
+
+
+#describe all
+df.describe(include='all') 
+
+
+# In[9]:
+
+
+# count số dòng bị null ở mỗi cột
+df.isna().sum()
+
+
+# # 1. Data Correction
+
+# ## 1.1 Drop NA
+
+# In[10]:
+
+
+# tạo bảng df_dropna_all bằng cách loại bỏ tất cả giá trị null trong bảng và in ra info
+df_dropna_all = df.dropna()
+print(df_dropna_all.info())
+
+
+# In[11]:
+
+
+# tạo bảng df_dropna_online_order bằng cách loại bỏ giá trị null trong cột online_order và in ra info
+df_dropna_online_order = df.dropna(subset=['online_order'])
+print(df_dropna_online_order.info())
+
+
+# ## 1.2 Fill NA
+
+# In[12]:
+
+
+# fill tất cả NA bằng 0, lưu vào bảng df_fillna_0 và in ra info
+df_fillna_0 = df.fillna(0)
+print(df_fillna_0.info())
+
+
+# In[13]:
+
+
+# fill NA bằng ffill, lưu vào bảng df_fillna_ffill và in ra info
+df_fillna_ffill = df.ffill()
+print(df_fillna_ffill.info())
+
+
+# In[14]:
+
+
+# fill NA bằng bfill, lưu vào bảng df_fillna_bfill và in ra info
+df_fillna_bfill = df.bfill()
+print(df_fillna_bfill.info())
+
+
+# ## 1.3. Assess Categorical Data
+
+# In[15]:
+
+
+# load sheet Demographic và hiển thị top head
+Demographic = pd.read_excel("KPMG.xlsx", "CustomerDemographic")
+Demographic.head()
+
+
+# In[16]:
+
+
+# in ra info bảng 
+print(Demographic.info())
+
+
+# In[17]:
+
+
+# describe các giá trị object
+print(Demographic.describe())
+
+
+# In[18]:
+
+
+# Remove all NA row
+CustomerDemographic = Demographic.dropna()
+print(CustomerDemographic.info())
+
+
+# In[19]:
+
+
+# In ra các giá trị unique của cột gender
+print(Demographic.gender.unique())
+
+
+# In[20]:
+
+
+# Quy chuẩn cột Gender về 2 nhóm Male và Female, Unisex và in ra giá trị unique mới
+Demographic['gender'] = Demographic.gender.replace('F', 'Female')
+Demographic['gender'] = Demographic.gender.replace('Femal', 'Female')
+Demographic['gender'] = Demographic.gender.replace('M', 'Male')
+Demographic['gender'] = Demographic.gender.replace('U', 'Unisex')
+
+
+# In[22]:
+
+
+# Tính tuổi của mỗi khách hàng và lưu vào cột "Age" và in ra min age, max age
+Demographic["Age"] = Demographic["DOB"].apply(lambda x : (pd.datetime.now().year - x.year))
+Demographic.head()
+
+
+# In[23]:
+
+
+#in ra min age, max age
+print(Demographic["Age"].min())
+print(Demographic["Age"].max())
+
+
+# In[24]:
+
+
+# phân nhóm khách hàng dưới 36 tuổi là nhóm "Young", Từ 36 - 55 là "Middle", trên 55 là Older
+# lưu vào cột "Age_Group" bằng cách sử dụng hàm cut
+Demographic['Age_Group']=pd.cut(Demographic.Age,bins=[20,36,55,179],labels=['Young','Middle','Older'])
+Demographic.head()
+
+
+# # 2. Data Completeness
+
+# In[25]:
+
+
+#join data sale vs demographic và in ra những trường hợp missing demographic info
+data_sale_demographic = df.join(Demographic.set_index('customer_id'), on='customer_id')
+data_sale_demographic.head()
+
+
+# In[26]:
+
+
+missing_demographic_info = data_sale_demographic.isna()
+print(missing_demographic_info)
+
+
+# # 3. Data Aggregation
+
+# In[27]:
+
+
+# tính tổng khách hàng bằng hàm nunique
+data_sale_demographic['customer_id'].nunique()
+
+
+# In[33]:
+
+
+# Tính số khách khách hàng mỗi tháng
+# hint 1: tạo column year_month bằng hàm dt.strftime
+# hint 2: group by year_month và nunique
+data_sale_demographic['year_month'] = data_sale_demographic['transaction_date'].dt.strftime('%m')
+no_customer_per_month = data_sale_demographic.groupby(by=["year_month"]).nunique()
+print(no_customer_per_month['customer_id'])
+
+
+# In[34]:
+
+
+# Tính Gross margin của mỗi tháng. Gross margin = list_price - standard_cost
+# hint 1: tạo column Gross_Margin
+# hint 2: group by year_month và sử dụng hàm agg
+data_sale_demographic['Gross_Margin'] = data_sale_demographic['list_price'] - data_sale_demographic['standard_cost']
+gross_margin_per_month = data_sale_demographic.groupby(by=["year_month"]).sum()
+print(gross_margin_per_month['Gross_Margin'])
+
+
+# In[35]:
+
+
+# Tính số lượng order và doanh thu group by online_order và order_status 
+# hint 1: group by online_order, order_status và sử dụng hàm agg
+# Tính số lượng order group by online_order và order_status
+revenue_groupby = data_sale_demographic.groupby(['online_order','order_status']).sum(['Gross_Margin'])
+print(revenue_groupby['Gross_Margin'])
+
+
+# In[36]:
+
+
+# Tính doanh thu group by online_order và order_status
+no_customer_groupby = data_sale_demographic.groupby(['online_order','order_status']).nunique()
+print(no_customer_groupby['customer_id'])
+
+
+# # 4. Data Visualization
+
+# In[37]:
+
+
+# Sử dụng seaborn và vẽ ra 5 loại chart khác nhau (column, line, box,...) với đầy đủ tên chart, tên các trục và chú thích.
+# Đưa ra message thông qua từng chart vừa vẽ
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+
+
+
+# In[39]:
+
+
+#Orders distribution by wealth segment
+plt.figure(figsize = (7,4), dpi = 100)
+
+counts = data_sale_demographic['wealth_segment'].value_counts(normalize = True)
+sns.barplot(x = counts.index, y = counts.values, color='red')
+plt.xlabel('Wealth segment')
+plt.ylabel('Count')
+print(counts * 100)
+
+plt.title("Orders distribution by wealth segment - percent")
+plt.show()
+#Khách hàng được chia thành 3 loại theo tình hình tài chính: 
+#thứ nhất là nhóm khách hàng có thu nhập trung bình (Mass Customer) chiếm 50% số đơn đặt hàng
+#thứ hai là nhóm khách hàng có thu nhập trên mức trung bình (High Net Worth) chiếm 24% số đơn đặt hàng
+#thứ ba là nhóm khách hàng có thu nhập cao (Affluent Customer), chiếm 25% đơn đặt hàng
+
+
+# In[46]:
+
+
+data_sale_demographic.job_industry_category.value_counts().plot.pie(autopct=lambda pct: str(round(pct, 1)) + '%')
+plt.title('Old Job Industries')
+plt.ylabel('')
+plt.show()
+#Biểu đồ cho thấy hầu hết khách hàng của công ty làm việc trong ngành sản xuất
+
+
+# In[47]:
+
+
+# Brand VS cost
+
+plt.figure(figsize = (9,4), dpi = 100)
+
+sns.barplot(data = data_sale_demographic, x = "brand",y='standard_cost',color='red')
+plt.xlabel('Brand');
+plt.ylabel('standard cost')
+
+plt.title("Brand by Standard cost")
+
+plt.show()
+
+#San pham co gia cao nhat la Giant Bicycles
+
+
+# In[43]:
+
+
+#Gender vs owns a car
+
+plt.figure(figsize = (7,4), dpi = 100)
+
+sns.countplot(data = data_sale_demographic, x = "owns_car",hue='gender')
+plt.xlabel('owns a car');
+plt.ylabel('count')
+plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
+plt.title("Gender vs owns a car")
+
+plt.show()
+#Phụ nữ sở hữu ô tô mua hàng nhiều hơn phụ nữ không sở hữu ô tô
+#Đàn ông không sở hữu ô tô mua hàng nhiều hơn đàn ông sở hữu ô tô
+
+
+# In[44]:
+
+
+#Orders distribution by Age groups
+plt.figure(figsize = (7,4), dpi = 100)
+base_color = sns.color_palette()[0]
+
+counts = data_sale_demographic['Age_Group'].value_counts(normalize = True)
+sns.barplot(x = counts.index, y = counts.values, color=base_color)
+plt.xlabel('Age Group')
+plt.ylabel('Count')
+print(counts * 100)
+
+plt.title("Orders distribution by Age group - percent")
+plt.show()
+
+##Số lượng đơn đặt hàng giữa các nhóm khác nhau cho thấy những người nhóm tuổi Middle từ 36-55 tuổi đặt hàng nhiều nhất
+
+
+# In[45]:
+
+
+data_sale_demographic.groupby('job_industry_category')['owns_car']     .value_counts()     .unstack(level=1)     .plot.barh(stacked=False)
+for i, v in enumerate(data_sale_demographic.groupby('job_industry_category')                       .agg({'owns_car': lambda x: len(x)})['owns_car']):
+    plt.text(v // 2 + 6, i - .1, int(v), color='black')
+axes = plt.gca()
+axes.set_xlim([0,2500])
+plt.title('New Car Ownership by Job Industry')
+plt.legend(['Does Not Own a Car', 'Owns a Car'], loc='upper right')
+plt.show()
+#Khách hàng trong ngành sản xuất và dịch vụ tài chính đem lại doanh thu cao nhất, trong đó:
+#Ngành sản xuất tạo ra nhiều doanh thu hơn các ngành khác từ khách hàng không có ô tô riêng
+#Ngành dịch vụ tài chính tạo ra nhiều doanh thu hơn các ngành khác từ khách hàng có ô tô riêng
+
+
+# In[ ]:
+
+
+
+
