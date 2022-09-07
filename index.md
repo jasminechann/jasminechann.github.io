@@ -6,6 +6,7 @@
 
 [![Open Notebook](https://img.shields.io/badge/Jupyter-Open_Notebook-blue?logo=Jupyter)](projects/KPMG_project1.ipynb)
 
+### Project 2: Detect Food Trends from Facebook Posts
 ---
 
 ---
