@@ -10,4 +10,4 @@
 ---
 
 ---
-<center>© 2020 Trang (Jenny) Nguyen. Powered by Jekyll and the Minimal Theme.</center>
+<center>© 2020 Trang Nguyen. Powered by Jekyll and the Minimal Theme.</center>
